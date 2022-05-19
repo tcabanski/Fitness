@@ -34,6 +34,17 @@ def configure_logging():
 
     config.dictConfig(log_config)
 
+def handle_echo_command(ack, respond, command):
+    ack()
+    logger.debug(f"received {command}")
+    respond(f"{command['text']}")
+
+def handle_leaderboard_command(ack, say, respond, command, client):
+    ack()
+    logger.debug(f"received {command}")
+    channel_id=command.get('channel_id')
+    say("Handling leaderboard")
+
 configure_logging()
 logger = logging.getLogger("app")
 
@@ -45,12 +56,13 @@ app = App(
 
 # The echo command simply echoes on command
 @app.command("/echo")
-def repeat_text(ack, respond, command):
-    # Acknowledge command request
-    ack()
-    respond(f"{command['text']}")
-    logger.debug(f"received {command}")
-    
+def echo_command(ack, respond, command):
+    handle_echo_command(ack, respond, command)
+
+@app.command("/leaderboard")
+def leaderboard_command(ack, say, respond, command, client):
+    handle_leaderboard_command(ack, say, respond, command, client)
+
 # Start your app
 if __name__ == "__main__":
     app.start(port=int(os.environ.get("PORT", 3000)))
