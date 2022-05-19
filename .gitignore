@@ -128,5 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-#tokens
+#project files and folders
 scripts/setup.ps1
+logs/**
