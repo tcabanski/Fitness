@@ -1,7 +1,6 @@
 import os
 import logging
 from logging import config
-from pickle import NONE
 from slack_bolt import App
 
 def configure_logging():
@@ -41,7 +40,7 @@ def handle_echo_command(ack, respond, command):
     respond(f"{command['text']}")
 
 def handle_leaderboard_command(ack, say, respond, command, client):
-    #command is /leaderboard [ts of last leaderboard] For example, "1652975243.809649".  Have to test to see if the dot is required
+    #command is /leaderboard [ts of last leaderboard] For example, "1652975243.809649".  The dot is required.
     ack()
     try:
         logger.debug(f"received {command}.  Creating leaderboard\n--------------------------------------------")
@@ -52,17 +51,24 @@ def handle_leaderboard_command(ack, say, respond, command, client):
         else:
             #post a placeholder leaderboard
             response = say(f'Building Leaderboard from {last_leaderboard_id}')
+
             #add a visible timestamp to it
             ts = response.get("ts")
             client.chat_update(channel=channel_id, ts=ts, text=f'Building Leaderboard ID:{ts} from: {last_leaderboard_id}')
 
-            #collect data since then (the while loop handles the pqagination of the call).   Keep going until we run out of pages.
+            #collect data since the last leadership timestamp provided.   Keep going until we run out of pages.
             result = client.conversations_history(channel=channel_id, oldest=last_leaderboard_id, limit=100)
             while True:
-                #parse results
+                #parse results for page
                 conversation_history = result["messages"]
                 for conversation in conversation_history:
-                    logger.debug(conversation)
+                    logger.debug(f'Conversation: {conversation}')
+                    message_ts = conversation.get('ts')
+                    reaction_response = client.reactions_get(channel=channel_id, timestamp=message_ts)
+                    reactions =reaction_response.get('reactions')
+                    if reactions is not None:
+                        for reaction in reactions:
+                            logger.debug(f'Reaction: {reaction}')
 
                 #exit if there are no more pages
                 next_cursor = result.get("next_cursor")
