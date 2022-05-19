@@ -44,7 +44,7 @@ def handle_leaderboard_command(ack, say, respond, command, client):
     #command is /leaderboard [ts of last leaderboard] For example, "1652975243.809649".  Have to test to see if the dot is required
     ack()
     try:
-        logger.debug(f"received {command}")
+        logger.debug(f"received {command}.  Creating leaderboard\n--------------------------------------------")
         channel_id = command.get('channel_id')
         last_leaderboard_id = command.get("text")
         if last_leaderboard_id is None:
@@ -56,22 +56,27 @@ def handle_leaderboard_command(ack, say, respond, command, client):
             ts = response.get("ts")
             client.chat_update(channel=channel_id, ts=ts, text=f'Building Leaderboard ID:{ts} from: {last_leaderboard_id}')
 
-            #collect data since then (the while loop handles the pqagination of the call)
+            #collect data since then (the while loop handles the pqagination of the call).   Keep going until we run out of pages.
+            result = client.conversations_history(channel=channel_id, oldest=last_leaderboard_id, limit=100)
             while True:
-                result = client.conversations_history(channel=channel_id, oldest=last_leaderboard_id, limit=100)
                 #parse results
                 conversation_history = result["messages"]
-                #paginate
+                for conversation in conversation_history:
+                    logger.debug(conversation)
+
+                #exit if there are no more pages
                 next_cursor = result.get("next_cursor")
-                if next_cursor is NONE or next_cursor="":
+                if next_cursor is None or next_cursor == "":
                     break
+
+                #next page
+                result = client.conversations_history(channel=channel_id, oldest=last_leaderboard_id, cursor=next_cursor, limit=100)
+
             #post leaderboard
-            
-            logger.info("{} messages found in {}".format(len(conversation_history), id))
-            
-            logger.debug('done')
+            logger.debug('done\n-------------------------------------------------------------')
+
     except Exception as e:
-        logger.error(f"Error creating conversation: {e}")
+        logger.error(f"Error creating conversation: {e}\n-----------------------------------------------------")
 
 configure_logging()
 logger = logging.getLogger("app")
