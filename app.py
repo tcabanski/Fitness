@@ -1,6 +1,7 @@
 import os
 import logging
 from logging import config
+from pickle import NONE
 from slack_bolt import App
 
 def configure_logging():
@@ -40,16 +41,42 @@ def handle_echo_command(ack, respond, command):
     respond(f"{command['text']}")
 
 def handle_leaderboard_command(ack, say, respond, command, client):
+    #command is /leaderboard [ts of last leaderboard] For example, "1652975243.809649".  Have to test to see if the dot is required
     ack()
-    logger.debug(f"received {command}")
-    channelId = command.get('channel_id')
-    response = say('Handling leaderboard')
-    ts = response.get("ts")
-    client.reactions_add(channel=channelId, name='smile', timestamp=ts)
-    logger.debug('done')
+    try:
+        logger.debug(f"received {command}")
+        channel_id = command.get('channel_id')
+        last_leaderboard_id = command.get("text")
+        if last_leaderboard_id is None:
+            respond("You must include the ID of the last leaderboard.  For exanmple, /leaderboard 1652975243.809649")
+        else:
+            #post a placeholder leaderboard
+            response = say(f'Building Leaderboard from {last_leaderboard_id}')
+            #add a visible timestamp to it
+            ts = response.get("ts")
+            client.chat_update(channel=channel_id, ts=ts, text=f'Building Leaderboard ID:{ts} from: {last_leaderboard_id}')
+
+            #collect data since then (the while loop handles the pqagination of the call)
+            while True:
+                result = client.conversations_history(channel=channel_id, oldest=last_leaderboard_id, limit=100)
+                #parse results
+                conversation_history = result["messages"]
+                #paginate
+                next_cursor = result.get("next_cursor")
+                if next_cursor is NONE or next_cursor="":
+                    break
+            #post leaderboard
+            
+            logger.info("{} messages found in {}".format(len(conversation_history), id))
+            
+            logger.debug('done')
+    except Exception as e:
+        logger.error(f"Error creating conversation: {e}")
 
 configure_logging()
 logger = logging.getLogger("app")
+logger.info('\n\n\n')
+logger.info("====================================================== STARTUP ==============================================")
 
 # Initializes your app with your bot token and signing secret
 app = App(
