@@ -43,10 +43,6 @@ app = App(
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
 )
 
-# Start your app
-if __name__ == "__main__":
-    app.start(port=int(os.environ.get("PORT", 3000)))
-
 # The echo command simply echoes on command
 @app.command("/echo")
 def repeat_text(ack, respond, command):
@@ -54,3 +50,7 @@ def repeat_text(ack, respond, command):
     ack()
     respond(f"{command['text']}")
     logger.debug(f"received {command}")
+    
+# Start your app
+if __name__ == "__main__":
+    app.start(port=int(os.environ.get("PORT", 3000)))
