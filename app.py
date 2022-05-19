@@ -42,8 +42,11 @@ def handle_echo_command(ack, respond, command):
 def handle_leaderboard_command(ack, say, respond, command, client):
     ack()
     logger.debug(f"received {command}")
-    channel_id=command.get('channel_id')
-    say("Handling leaderboard")
+    channelId = command.get('channel_id')
+    response = say('Handling leaderboard')
+    ts = response.get("ts")
+    client.reactions_add(channel=channelId, name='smile', timestamp=ts)
+    logger.debug('done')
 
 configure_logging()
 logger = logging.getLogger("app")
